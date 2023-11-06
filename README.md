@@ -3,7 +3,7 @@
 
 > ⚠️ ***Warning*** ⚠️ This module is still in development but is ready for initial testing and feedback via [GitHub Issues](https://github.com/Azure/terraform-azurerm-avm-ptn-alz/issues).
 
-- This repository contains Terraform module for deploying Azure Landing Zones (ALZs).
+- This repository contains a Terraform module for deploying Azure Landing Zones (ALZs).
 - Make sure to review the examples.
 
 <!-- markdownlint-disable MD033 -->
@@ -36,6 +36,7 @@ The following resources are used by this module:
 - [alz_policy_role_assignments.this](https://registry.terraform.io/providers/azure/alz/latest/docs/resources/policy_role_assignments) (resource)
 - [azurerm_management_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_group) (resource)
 - [azurerm_management_group_policy_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_group_policy_assignment) (resource)
+- [azurerm_management_group_subscription_association.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_group_subscription_association) (resource)
 - [azurerm_policy_definition.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/policy_definition) (resource)
 - [azurerm_policy_set_definition.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/policy_set_definition) (resource)
 - [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
@@ -45,6 +46,7 @@ The following resources are used by this module:
 - [time_sleep.before_policy_role_assignments](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) (resource)
 - [alz_archetype.this](https://registry.terraform.io/providers/azure/alz/latest/docs/data-sources/archetype) (data source)
 - [alz_archetype_keys.this](https://registry.terraform.io/providers/azure/alz/latest/docs/data-sources/archetype_keys) (data source)
+- [azurerm_subscription.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/subscription) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -95,6 +97,14 @@ Type: `string`
 
 Default: `null`
 
+### <a name="input_default_private_dns_zone_resource_group_id"></a> [default\_private\_dns\_zone\_resource\_group\_id](#input\_default\_private\_dns\_zone\_resource\_group\_id)
+
+Description: n/a
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_delays"></a> [delays](#input\_delays)
 
 Description: A map of delays to apply to the creation and destruction of resources.  
@@ -123,9 +133,37 @@ Default: `{}`
 
 ### <a name="input_policy_assignments_to_add"></a> [policy\_assignments\_to\_add](#input\_policy\_assignments\_to\_add)
 
-Description: Not implemented yet.
+Description: A map of policy assignment objects to add or update the alz archetype with.
 
-Type: `map(object({}))`
+The key is the name of the policy assignment.  
+The value is a map of the properties of the policy assignment.
+
+- `display_name` - (Optional) The display name of the policy assignment.
+- `enforcement_mode` - (Optional) The enforcement mode of the policy assignment. Possible values are `Default` and `DoNotEnforce`.
+- `identity` - (Optional) The identity of the policy assignment. Possible values are `SystemAssigned` and `UserAssigned`.
+- `identity_ids` - (Optional) A set of ids of the user assigned identities to assign to the policy assignment.
+- `non_compliance_message` - (Optional) A set of non compliance message objects to use for the policy assignment. Each object has the following properties:
+  - `message` - (Required) The non compliance message.
+  - `policy_definition_reference_id` - (Optional) The reference id of the policy definition to use for the non compliance message.
+- `parameters` - (Optional) A JSON string of parameters to use for the policy assignment. Use `jsonencode()` to convert a map of the parameter names to values.
+- `policy_definition_id` - (Optional) The id of the policy definition to assign to the policy assignment. Conflicts with `policy_definition_name` and `policy_set_definition_name`.
+- `policy_definition_name` - (Optional) The name of the policy definition to assign to the policy assignment. Conflicts with `policy_definition_id` and `policy_set_definition_name`.
+- `policy_set_definition_name` - (Optional) The name of the policy set definition to assign to the policy assignment. Conflicts with `policy_definition_id` and `policy_definition_name`.
+
+Type:
+
+```hcl
+map(object({
+    display_name               = optional(string, null)
+    enforcement_mode           = optional(string, null)
+    identity                   = optional(string, null)
+    identity_ids               = optional(list(string), null)
+    policy_definition_id       = optional(string, null)
+    policy_definition_name     = optional(string, null)
+    policy_set_definition_name = optional(string, null)
+    parameters                 = optional(string, null)
+  }))
+```
 
 Default: `{}`
 
@@ -200,6 +238,14 @@ Default: `[]`
 ### <a name="input_role_definitions_to_remove"></a> [role\_definitions\_to\_remove](#input\_role\_definitions\_to\_remove)
 
 Description: A set of role definition names to remove from the `base_archetype`.
+
+Type: `set(string)`
+
+Default: `[]`
+
+### <a name="input_subscription_ids"></a> [subscription\_ids](#input\_subscription\_ids)
+
+Description: A set of subscription ids to move under this management group.
 
 Type: `set(string)`
 

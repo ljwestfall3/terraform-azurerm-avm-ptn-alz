@@ -13,8 +13,9 @@ data "alz_archetype_keys" "this" {
 data "alz_archetype" "this" {
   id = var.id
   defaults = {
-    location                   = var.default_location
-    log_analytics_workspace_id = var.default_log_analytics_workspace_id
+    location                           = var.default_location
+    log_analytics_workspace_id         = var.default_log_analytics_workspace_id
+    private_dns_zone_resource_group_id = var.default_private_dns_zone_resource_group_id
   }
   display_name                     = var.display_name
   base_archetype                   = var.base_archetype
@@ -35,6 +36,17 @@ resource "azurerm_management_group" "this" {
   parent_management_group_id = format("/providers/Microsoft.Management/managementGroups/%s", data.alz_archetype.this.parent_id)
 
   depends_on = [time_sleep.before_management_group_creation]
+}
+
+data "azurerm_subscription" "this" {
+  for_each        = var.subscription_ids
+  subscription_id = each.key
+}
+
+resource "azurerm_management_group_subscription_association" "this" {
+  for_each            = var.subscription_ids
+  management_group_id = azurerm_management_group.this.id
+  subscription_id     = data.azurerm_subscription.this[each.key].id
 }
 
 resource "azurerm_policy_definition" "this" {
@@ -108,7 +120,7 @@ resource "azurerm_management_group_policy_assignment" "this" {
 
     content {
       type         = identity.value.type
-      identity_ids = identity.value.type == "SystemAssigned" ? null : toset(keys(identity.value.userAssignedIdentities))
+      identity_ids = identity.value.type == "SystemAssigned" ? [] : toset(keys(identity.value.userAssignedIdentities))
     }
   }
 
