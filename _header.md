@@ -2,14 +2,30 @@
 
 # ALZ Terraform Module
 
-> [!WARNING]
-> This module is still in development but is ready for initial testing and feedback via [GitHub Issues](https://github.com/Azure/terraform-azurerm-avm-ptn-alz/issues).
-
 - This repository contains a Terraform module for deploying Azure Landing Zones (ALZs).
 - Make sure to review the examples.
 
 > [!IMPORTANT]
 > Make sure to add `.alzlib` to your `.gitignore` file to avoid committing the downloaded ALZ library to your repository.
+
+## Features
+
+- Deploy management groups according to the supplied architecture (default is ALZ)
+- Deploy policy assets (definitions, assignments, and initiatives) according to the supplied architecture ands associated archetypes
+- Modify policy assignments:
+  - Enforcement mode
+  - Identity
+  - Non-compliance messages
+  - Overrides
+  - Parameters
+  - Resource selectors
+- Create the required role assignments for Azure Policy, including support for the **assign permissions** metadata tag, just like the Azure Portal
+- Deploy custom role definitions
+
+## AzAPI Provider
+
+We use the AzAPI provider to interact with the Azure APIs.
+The new features allow us to be more efficient and reliable, with orders of magnitude speed improvements and retry logic for transient errors.
 
 ## Unknown Values
 
@@ -18,22 +34,28 @@ If you pass an unknown (known after apply) value into the module, it will not be
 This may cause resources to be unnecessarily recreated.
 
 Such unknown values include resource ids. For example, if you are creating a resource and passing the id of the resource group to the module, this will cause the issue.
-
-Instead, use string interpolation to pass the values. For example:
+Instead, use string interpolation or provider functions to pass the values. For example:
 
 ### Recommended
 
-This is the recommended way to use this module:
+Either: Use known values as inputs, or use Terraform Stacks.
 
 > [!NOTE]
 > We assume that all variable inputs are literals.
 
 ```terraform
-
 locals {
-  foo_resource_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.FooResourceProvider/${var.foo_resource_name}"
+  subscription_id     = data.azapi_client_config.current.subscription_id
+  resource_group_name = "rg1"
+  resource_type       = "Microsoft.Network/virtualNetworks"
+  resource_names      = ["vnet1"]
+  my_resource_id = provider::azapi::resource_group_resource_id(
+    data.azapi_client_config.current.subscription_id,
+    local.resource_group_name,
+    local.resource_type,
+    local.resource_names
+  )
 }
-
 
 module "example" {
   source = "Azure/terraform-azurerm-avm-ptn-alz/azurerm"
@@ -43,7 +65,7 @@ module "example" {
       policy_assignments = {
         mypolicy = {
           parameters = {
-            parameterName = jsonencode({ value = local.foo_resource_id })
+            parameterName = jsonencode({ value = local.my_resource_id })
           }
         }
       }
@@ -54,5 +76,5 @@ module "example" {
 
 ### Deferred Actions
 
-We are awaiting the results of the upstream Terraform language experiment *deferred actions*. This may provide a solution to this issue.
-See the release notes [here](https://github.com/hashicorp/terraform/releases/tag/v1.10.0-alpha20240619) for more information.
+We are awaiting the results of the upstream Terraform language experiment *deferred actions*. This will provide a solution to this issue.
+See the release notes [here](https://github.com/hashicorp/terraform/releases/tag/v1.10.0-alpha20241023) for more information.
