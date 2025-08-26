@@ -3,10 +3,13 @@ resource "azapi_resource" "policy_set_definitions" {
 
   name      = each.value.set_definition.name
   parent_id = "/providers/Microsoft.Management/managementGroups/${each.value.mg}"
-  type      = "Microsoft.Authorization/policySetDefinitions@2023-04-01"
+  type      = "Microsoft.Authorization/policySetDefinitions@${var.resource_api_versions.policy_set_definition}"
   body = {
     properties = each.value.set_definition.properties
   }
+  create_headers                   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  delete_headers                   = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
+  read_headers                     = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   replace_triggers_external_values = lookup(each.value.set_definition.properties, "policyType", null)
   retry = var.retries.policy_set_definitions.error_message_regex != null ? {
     error_message_regex  = var.retries.policy_set_definitions.error_message_regex
@@ -15,6 +18,7 @@ resource "azapi_resource" "policy_set_definitions" {
     multiplier           = lookup(var.retries.policy_set_definitions, "multiplier", null)
     randomization_factor = lookup(var.retries.policy_set_definitions, "randomization_factor", null)
   } : null
+  update_headers = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   timeouts {
     create = var.timeouts.policy_set_definition.create
