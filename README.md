@@ -102,7 +102,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.9, < 2.0)
 
-- <a name="requirement_alz"></a> [alz](#requirement\_alz) (~> 0.17)
+- <a name="requirement_alz"></a> [alz](#requirement\_alz) (~> 0.20)
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
 
@@ -680,8 +680,8 @@ Description: The retry settings to apply to the CRUD operations. Value is a nest
 - `error_message_regex` - (Optional) A list of error message regexes to retry on. Defaults to `null`, which will will disable retries. Specify a value to enable.
 - `interval_seconds` - (Optional) The initial interval in seconds between retries. Defaults to `null` and will fall back to the provider default value.
 - `max_interval_seconds` - (Optional) The maximum interval in seconds between retries. Defaults to `null` and will fall back to the provider default value.
-- `multiplier` - (Optional) The multiplier to apply to the interval between retries. Defaults to `null` and will fall back to the provider default value.
-- `randomization_factor` - (Optional) The randomization factor to apply to the interval between retries. Defaults to `null` and will fall back to the provider default value.
+- `multiplier` - (Optional) DEPRECATED The multiplier to apply to the interval between retries. Defaults to `null` and will fall back to the provider default value. This value is deprecated and will be removed in a future version.
+- `randomization_factor` - DEPRECATED (Optional) The randomization factor to apply to the interval between retries. Defaults to `null` and will fall back to the provider default value. This value is deprecated and will be removed in a future version.
 
 For more information please see the provider documentation here: <https://registry.terraform.io/providers/Azure/azapi/azurerm/latest/docs/resources/resource#nestedatt--retry>
 
@@ -757,7 +757,9 @@ object({
       randomization_factor = optional(number, null)
     }), {})
     hierarchy_settings = optional(object({
-      error_message_regex  = optional(list(string), null)
+      error_message_regex = optional(list(string), [
+        "AuthorizationFailed", # Avoids a eventual consistency issue where a recently created management group is not yet available for a GET operation.
+      ])
       interval_seconds     = optional(number, null)
       max_interval_seconds = optional(number, null)
       multiplier           = optional(number, null)
@@ -785,6 +787,40 @@ If you disable this then all role assignments must be supplied with a `role_defi
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_role_assignment_name_use_random_uuid"></a> [role\_assignment\_name\_use\_random\_uuid](#input\_role\_assignment\_name\_use\_random\_uuid)
+
+Description: A control to use a random UUID for the role assignment name.  
+If set to false, the name will be a deterministic UUID based on the principal ID and role definition resource ID,  
+though this can cause issues with duplicate UUIDs as the scope of the role assignment is not taken into account.
+
+This is default to false to preserve existing behaviour.  
+However, we recommend this is set to true to avoid resources becoming re-created due to computed attribute changes in the resource graph.
+
+Type: `bool`
+
+Default: `false`
+
+### <a name="input_schema_validation_enabled"></a> [schema\_validation\_enabled](#input\_schema\_validation\_enabled)
+
+Description: Enable or disable schema validation for each resource type. Defaults to `true` for all resource types.  
+If you encounter issues with schema validation, please raise an issue against the AzAPI provider.
+
+Type:
+
+```hcl
+object({
+    hierarchy_settings     = optional(bool, true)
+    management_groups      = optional(bool, true)
+    policy_assignments     = optional(bool, true)
+    policy_definitions     = optional(bool, true)
+    policy_set_definitions = optional(bool, true)
+    role_assignments       = optional(bool, true)
+    role_definitions       = optional(bool, true)
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_subscription_placement"></a> [subscription\_placement](#input\_subscription\_placement)
 
@@ -823,38 +859,38 @@ Type:
 ```hcl
 object({
     management_group = optional(object({
-      create = optional(string, "15m")
+      create = optional(string, "60m")
       delete = optional(string, "5m")
       update = optional(string, "5m")
-      read   = optional(string, "5m")
+      read   = optional(string, "60m")
       }), {}
     )
     role_definition = optional(object({
-      create = optional(string, "15m")
+      create = optional(string, "60m")
       delete = optional(string, "5m")
       update = optional(string, "5m")
-      read   = optional(string, "5m")
+      read   = optional(string, "60m")
       }), {}
     )
     role_assignment = optional(object({
-      create = optional(string, "15m")
+      create = optional(string, "60m")
       delete = optional(string, "5m")
       update = optional(string, "5m")
-      read   = optional(string, "5m")
+      read   = optional(string, "60m")
       }), {}
     )
     policy_definition = optional(object({
-      create = optional(string, "15m")
+      create = optional(string, "60m")
       delete = optional(string, "5m")
       update = optional(string, "5m")
-      read   = optional(string, "5m")
+      read   = optional(string, "60m")
       }), {}
     )
     policy_set_definition = optional(object({
-      create = optional(string, "15m")
+      create = optional(string, "60m")
       delete = optional(string, "5m")
       update = optional(string, "5m")
-      read   = optional(string, "5m")
+      read   = optional(string, "60m")
       }), {}
     )
     policy_assignment = optional(object({
@@ -865,10 +901,10 @@ object({
       }), {}
     )
     policy_role_assignment = optional(object({
-      create = optional(string, "15m")
+      create = optional(string, "60m")
       delete = optional(string, "5m")
       update = optional(string, "5m")
-      read   = optional(string, "5m")
+      read   = optional(string, "60m")
       }), {}
     )
   })
@@ -916,7 +952,7 @@ The following Modules are called:
 
 Source: Azure/avm-utl-interfaces/azure
 
-Version: 0.2.0
+Version: 0.5.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
