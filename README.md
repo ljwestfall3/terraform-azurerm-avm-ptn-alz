@@ -103,13 +103,25 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.12, < 2.0)
 
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.10, < 2.0)
+
 - <a name="requirement_alz"></a> [alz](#requirement\_alz) (~> 0.21)
+
+- <a name="requirement_alz"></a> [alz](#requirement\_alz) (~> 0.21)
+
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
+- <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
+
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.6)
+
+- <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.6)
+
+- <a name="requirement_time"></a> [time](#requirement\_time) (~> 0.9)
 
 - <a name="requirement_time"></a> [time](#requirement\_time) (~> 0.9)
 
@@ -643,6 +655,7 @@ The key of this map is the assignment name, and the value is an object with opti
     - `in` - (Optional) A set of strings to include in the selector.
     - `not_in` - (Optional) A set of strings to exclude from the selector.
 - `creation_enabled` - (Optional) Whether the policy assignment is created or not. Defaults to `true`. IMPORTANT: This is a convenience property for very small scale deployments, the recommended approach is to update your custom library to exclude the policy assignment.
+- `role_assignments_enabled` - (Optional) Whether the policy role assignments (the RBAC assignments granted to the policy assignment's managed identity for `DeployIfNotExists`/`Modify` effects) are created or not. Defaults to `true`. Set to `false` to keep the policy assignment and its managed identity while preventing this module from creating the associated role assignments - for example, to avoid duplicate role assignments (`RoleAssignmentExists`) when a shared identity is used by the same policy assignment across multiple management groups. IMPORTANT: This is a convenience property; the recommended approach for broad changes is to update your custom library.
 
 Type:
 
@@ -675,7 +688,8 @@ map(object({
           not_in = optional(set(string), null)
         })), [])
       })))
-      creation_enabled = optional(bool, true)
+      creation_enabled         = optional(bool, true)
+      role_assignments_enabled = optional(bool, true)
     }))
   }))
 ```

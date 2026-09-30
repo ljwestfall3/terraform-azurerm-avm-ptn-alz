@@ -31,10 +31,7 @@ resource "azapi_resource" "policy_assignments" {
       resourceSelectors     = lookup(each.value.assignment.properties, "resourceSelectors", null)
     }
   }
-  create_headers          = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
-  delete_headers          = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   ignore_missing_property = true
-  read_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
   replace_triggers_external_values = [
     lookup(each.value.assignment.properties, "policyDefinitionId", null),
     var.location,
@@ -48,7 +45,6 @@ resource "azapi_resource" "policy_assignments" {
     randomization_factor = lookup(var.retries.policy_assignments, "randomization_factor", null)
   } : null
   schema_validation_enabled = var.schema_validation_enabled.policy_assignments
-  update_headers            = var.enable_telemetry ? { "User-Agent" : local.avm_azapi_header } : null
 
   dynamic "identity" {
     for_each = lookup(each.value.assignment, "identity", null) != null ? [each.value.assignment.identity] : []
@@ -58,17 +54,13 @@ resource "azapi_resource" "policy_assignments" {
       identity_ids = keys(lookup(identity.value, "userAssignedIdentities", {}))
     }
   }
+
   timeouts {
     create = var.timeouts.policy_assignment.create
     delete = var.timeouts.policy_assignment.delete
     read   = var.timeouts.policy_assignment.read
     update = var.timeouts.policy_assignment.update
   }
-
-  depends_on = [
-    time_sleep.after_policy_set_definitions,
-    terraform_data.policy_assignments_dependencies,
-  ]
 
   lifecycle {
     ignore_changes = [
@@ -78,4 +70,8 @@ resource "azapi_resource" "policy_assignments" {
       body.properties.metadata.updatedOn,
     ]
   }
+  depends_on = [
+    time_sleep.after_policy_set_definitions,
+    terraform_data.policy_assignments_dependencies,
+  ]
 }
